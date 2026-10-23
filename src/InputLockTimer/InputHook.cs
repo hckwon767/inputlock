@@ -286,8 +286,7 @@ internal sealed class InputHook : IDisposable
             if (_sync.IsHandleCreated && !_sync.IsDisposed)
                 _sync.BeginInvoke(handler);
         }
-        catch (InvalidOperationException) { }
-        catch (ObjectDisposedException) { }
+        catch (InvalidOperationException) { } // ObjectDisposedException 포함
     }
 
     private void ResetTracking()

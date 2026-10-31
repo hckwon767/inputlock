@@ -145,6 +145,29 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool DestroyIcon(IntPtr hIcon);
 
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
+    private const int MDT_EFFECTIVE_DPI = 0;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
+
+    [DllImport("shcore.dll")]
+    private static extern int GetDpiForMonitor(IntPtr hMonitor, int dpiType, out uint dpiX, out uint dpiY);
+
+    /// <summary>화면 좌표(px)가 속한 모니터의 DPI를 반환합니다. 실패하면 96.</summary>
+    public static int GetMonitorDpi(Point screenPoint)
+    {
+        try
+        {
+            var monitor = MonitorFromPoint(new POINT { X = screenPoint.X, Y = screenPoint.Y }, MONITOR_DEFAULTTONEAREST);
+            if (monitor != IntPtr.Zero &&
+                GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out uint dpiX, out _) == 0 && dpiX > 0)
+                return (int)dpiX;
+        }
+        catch (Exception) { /* shcore.dll 없음 등 → 기본값 */ }
+        return 96;
+    }
+
     /// <summary>시스템 전체 기준 마지막 입력 이후 경과 시간(ms). 실패하면 0(= 비활성 아님)을 반환합니다.</summary>
     public static long GetSystemIdleMs()
     {

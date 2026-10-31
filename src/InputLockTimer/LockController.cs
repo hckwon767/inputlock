@@ -9,7 +9,7 @@ internal sealed class LockController : IDisposable
     private readonly Control _ui;
     private readonly LockStateMachine _machine = new();
     private readonly InputHook _hook;
-    private readonly OverlayForm _overlay = new();
+    private readonly OverlayManager _overlay = new();
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 250 };
     private AppSettings _settings = new();
     private bool _disposed;
@@ -203,7 +203,6 @@ internal sealed class LockController : IDisposable
         _timer.Stop();
         _timer.Dispose();
         _hook.Dispose();
-        _overlay.Close();
         _overlay.Dispose();
     }
 }

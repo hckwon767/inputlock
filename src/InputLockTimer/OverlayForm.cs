@@ -16,12 +16,14 @@ internal sealed class OverlayForm : Form
 
     private enum OverlayMode { Countdown, Locked }
 
+    private readonly Screen _screen;
     private OverlayMode _mode = OverlayMode.Countdown;
     private int _seconds;
     private string _hint = "";
 
-    public OverlayForm()
+    public OverlayForm(Screen screen)
     {
+        _screen = screen;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
@@ -33,6 +35,13 @@ internal sealed class OverlayForm : Form
     }
 
     protected override bool ShowWithoutActivation => true;
+
+    /// <summary>모니터 간 DPI가 달라도 Place에서 정한 크기를 그대로 유지합니다.</summary>
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        e.Cancel = true;
+        base.OnDpiChanged(e);
+    }
 
     protected override CreateParams CreateParams
     {
@@ -92,16 +101,17 @@ internal sealed class OverlayForm : Form
 
     private void Place(Size logicalSize, bool atTop)
     {
-        float scale = DeviceDpi / 96f;
-        var screen = Screen.FromPoint(Cursor.Position);
+        // 이 OSD가 속한 모니터 기준으로 배치·배율을 계산합니다(모니터마다 DPI가 다를 수 있음).
+        var bounds = _screen.Bounds;
+        float scale = NativeMethods.GetMonitorDpi(
+            new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2)) / 96f;
         var size = new Size((int)(logicalSize.Width * scale), (int)(logicalSize.Height * scale));
 
-        Size = size;
-        int x = screen.Bounds.Left + (screen.Bounds.Width - size.Width) / 2;
+        int x = bounds.Left + (bounds.Width - size.Width) / 2;
         int y = atTop
-            ? screen.Bounds.Top + (int)(32 * scale)
-            : screen.Bounds.Top + (screen.Bounds.Height - size.Height) / 2;
-        Location = new Point(x, y);
+            ? bounds.Top + (int)(32 * scale)
+            : bounds.Top + (bounds.Height - size.Height) / 2;
+        SetBounds(x, y, size.Width, size.Height);
 
         using var path = RoundedRect(new Rectangle(Point.Empty, size), (int)(18 * scale));
         var oldRegion = Region;
